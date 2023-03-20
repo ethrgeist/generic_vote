@@ -9,6 +9,7 @@ from django.http import HttpResponse, HttpResponseForbidden, JsonResponse
 from django.shortcuts import redirect
 from django.template import loader
 from django.urls import reverse
+from django.utils.timezone import now
 
 from .models import Candidate, MagicLink, Token, Vote
 
@@ -45,7 +46,7 @@ def login_page(request, token):
         if not user:
             return HttpResponseForbidden("Invalid token")
         login(request, user, backend="django.contrib.auth.backends.ModelBackend")
-        MagicLink.objects.filter(token=token).update(is_used=True)
+        MagicLink.objects.filter(token=token).update(is_used=True, updated_at=now())
         return redirect(reverse("app_vote"))
     except exceptions.ValidationError:
         template = loader.get_template("error.html")
