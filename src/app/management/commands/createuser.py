@@ -29,33 +29,43 @@ class Command(BaseCommand):
         csv = pandas.read_csv(final_path)
 
         for _, row in csv.iterrows():
-            user = User.objects.create_user(
-                username=row["email"],
-                email=row["email"],
-            )
-            token = Token.create()
-            magic_link = MagicLink.objects.create(user=user)
+            try:
+                User.objects.get(username=row["email"])
+                self.stdout.write(
+                    self.style.WARNING(f"User {row['email']} already exists")
+                )
+                continue
+            except User.DoesNotExist:
+                user = User.objects.create_user(
+                    username=row["email"],
+                    email=row["email"],
+                )
+                token = Token.create()
+                magic_link = MagicLink.objects.create(user=user)
 
-            template = loader.get_template("mail/magic_link.html")
+                template = loader.get_template("mail/magic_link.html")
 
-            magic_link = f'{settings.DOMAIN}{reverse("app_login", kwargs={"token": magic_link.token})}'
+                magic_link = f'{settings.DOMAIN}{reverse("app_login", kwargs={"token": magic_link.token})}'
 
-            context = {
-                "name": user,
-                "magic_link": magic_link,
-                "passphrase": token,
-                "domain": settings.DOMAIN,
-                "subject": f"{settings.EMAIL_SUBJECT_PREFIX} Dein Abstimmungslink",
-            }
+                context = {
+                    "name": user,
+                    "magic_link": magic_link,
+                    "passphrase": token,
+                    "domain": settings.DOMAIN,
+                    "subject": f"{settings.EMAIL_SUBJECT_PREFIX} Dein Abstimmungslink",
+                }
 
-            async_task(
-                send_mail,
-                subject=context["subject"],
-                message=f'Hallo {user},\nstimme ab mit folgendem Link:\n{context["magic_link"]}\n\nDein Prüfschlüssel lautet:\n{context["passphrase"]}\n\nBis dahin!',
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[f"{user.email}"],
-                html_message=template.render(context),
-                fail_silently=False,
-            )
+                async_task(
+                    send_mail,
+                    subject=context["subject"],
+                    message=f'Hallo {user},\nstimme ab mit folgendem Link:\n{context["magic_link"]}\n\nDein Prüfschlüssel lautet:\n{context["passphrase"]}\n\nBis dahin!',
+                    from_email=settings.DEFAULT_FROM_EMAIL,
+                    recipient_list=[f"{user.email}"],
+                    html_message=template.render(context),
+                    fail_silently=False,
+                    q_options={"save": False},
+                )
+
+                self.stdout.write(f"User {row['email']} created")
 
         self.stdout.write(self.style.SUCCESS("Successfully created users"))
