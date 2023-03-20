@@ -89,8 +89,11 @@ def vote_candidate(request):
 
     candidates = body["candidates"]
 
+    # Create a set of candidates to avoid duplicate votes
+    candidates_set = set(candidates)
+
     try:
-        for candidate in candidates:
+        for candidate in candidates_set:
             candidate = Candidate.objects.get(id=candidate)
             token = Token.objects.get(
                 id=request.session["token_valided"], is_active=True
