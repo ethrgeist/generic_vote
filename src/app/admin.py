@@ -42,6 +42,10 @@ class TokenAdmin(admin.ModelAdmin):
         _token = _token[:5] + "*" * to_replace + _token[-5:]
         return _token
 
+    def change_view(self, request, object_id, extra_context=None):
+        self.exclude = ("token",)
+        return super().change_view(request, object_id, extra_context)
+
     def has_delete_permission(self, _request, _obj=None):
         return True
 
