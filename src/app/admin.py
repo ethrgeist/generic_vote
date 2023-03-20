@@ -17,9 +17,11 @@ class CandidateAdmin(admin.ModelAdmin):
 
 
 class VoteAdmin(admin.ModelAdmin):
-    readonly_fields = ("candidate", "token", "created_at", "updated_at")
+    readonly_fields = ("candidate", "token", "created_at")
 
-    list_display = ("candidate", "token", "created_at", "updated_at")
+    list_display = ("candidate", "token", "created_at")
+
+    ordering = ("created_at",)
 
     def has_delete_permission(self, _request, _obj=None):
         return True
