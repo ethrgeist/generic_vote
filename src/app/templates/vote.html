@@ -1,0 +1,149 @@
+{% extends "base/base.html" %}
+
+{% block content %}
+<script>
+$(document).ready(function() {
+    $('form').on('submit', event => {
+      event.preventDefault()
+    })
+    $("#verify_passphrase").click(event => {
+        event.preventDefault()
+        el = $("#passphrase_input")
+        let passphrase = el.val()
+        if (passphrase == "") {
+          el.addClass("is-invalid")
+          return
+        } else {
+          el.removeClass("is-invalid")
+        }
+        $.ajax({
+            url: "{% url "app_verify_passphrase" %}",
+            type: "POST",
+            data: JSON.stringify({
+                "passphrase": passphrase
+            }),
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/json"
+            },
+            success: data => {
+                if (data["status"] == "success") {
+                    $("input:radio").prop("disabled", false)
+                    $("#reset_vote").prop("disabled", false)
+                    el.prop("disabled", true)
+                    $("#verify_passphrase").prop("disabled", true)
+                    $("#msg_token").html('<div class="alert alert-success" role="alert"><i class="fa-solid fa-square-check"></i> Prüfschlüssel verifiziert.</div>')
+                } else if (data["status"] == "spend") {
+                    $("#msg_token").html('<div class="alert alert-warning" role="alert">Prüfschlüssel wurde bereits verwendet.</div>')
+                    el.prop("disabled", true)
+                    $("#verify_passphrase").prop("disabled", true)
+                }
+            },
+            error: data => {
+                $("#msg_token").html('<div class="alert alert-danger" role="alert">Prüfschlüssel nicht gefunden.</div>')
+            }
+        })
+    })
+
+    $("#reset_vote").click(event => {
+        event.preventDefault()
+        $("input:radio").prop("checked", false)
+        $("#send_vote").prop("disabled", true)
+    })
+
+    $("input:radio").click(event => {
+        $("#send_vote").prop("disabled", false)
+    })
+
+    $("input:radio").change(event => {
+        let group = event.target.name
+        let id = event.target.value
+        let pair = $(`input:radio[name=${group}][value=${id}]`).attr("data-pair")
+        $(`#${pair}`).prop("checked", false)
+    })
+
+    $("#send_vote").click(event => {
+        event.preventDefault()
+        let candidates = $("input:radio:checked").map((i, el) => el.value).get()
+        console.log("Voted for", candidates)
+        $.ajax({
+            url: "{% url "app_vote_candidate" %}",
+            type: "POST",
+            data: JSON.stringify({
+                "candidates": candidates
+            }),
+            headers: {
+                "X-CSRFToken": "{{ csrf_token }}",
+                "Content-Type": "application/json"
+            },
+            success: data => {
+                if (data["status"] == "success") {
+                    $("#msg_vote").html('<div class="alert alert-success" role="alert"><i class="fa-solid fa-square-check"></i> Abgabe registriert.</div>')
+                    $("input:radio").prop("disabled", true)
+                    $("#send_vote").prop("disabled", true)
+                    $("#reset_vote").prop("disabled", true)
+                } else {
+                    alert("Es ist etwas schrecklich schief gelaufen. Bitte wende dich an den Wahlvorstand.")
+                }
+            }
+        })
+    })
+})
+
+</script>
+
+
+<h2>1. Verifiziere deinen Prüfschlüssel</h2>
+<p>Gib den Prüfschlüssel an, die dir per Mail zugeschickt wurde.</p>
+<form id="passphrase" class="pb-4 needs-validation" novalidate autocomplete="off">
+  <div class="mb-3">
+    <input type="email" class="form-control" id="passphrase_input" placeholder="Prüfschlüssel" required>
+    <div class="invalid-feedback">
+      Bitte gib einen Prüfschlüssel an.
+    </div>
+  </div>
+  <button id="verify_passphrase" type="button" class="btn btn-primary"><i class="fa-solid fa-fingerprint"></i> Verifizieren</button>
+  <div id="msg_token" class="pt-3"></div>
+</form>
+
+<h2>2. Stimme ab!</h2>
+<p>Du hast 2 Stimmen. Du kannst nicht beide Stimmen für die selbe Person verwenden. Du musst nicht beide Stimmen abgeben.</p>
+<form id="vote">
+    <table class="table table-hover">
+      <thead>
+        <tr>
+          <th scope="col">#</th>
+          <th scope="col">Nachname</th>
+          <th scope="col">Vorname</th>
+          <th scope="col">Ort</th>
+          <th scope="col"></th>
+          <th scope="col"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for candidate in candidates %}
+          <tr>
+            <th scope="row">{{ forloop.counter }}</th>
+            <td>{{ candidate.last_name }}</td>
+            <td>{{ candidate.first_name }}</td>
+            <td>{{ candidate.location|default_if_none:"" }}</td>
+            <td class="table-info">
+              <input class="form-check-input" type="radio" name="vote_group_a" id="radio-a-{{ candidate.id }}" value="{{ candidate.id }}" data-pair="radio-b-{{ candidate.id }}" disabled>
+              <label class="form-check-label" for="radio-a-{{ candidate.id }}">
+                1. Stimme
+              </label>
+            </td>
+            <td class="table-warning">
+              <input class="form-check-input" type="radio" name="vote_group_b" id="radio-b-{{ candidate.id }}" value="{{ candidate.id }}" data-pair="radio-a-{{ candidate.id }}" disabled>
+              <label class="form-check-label" for="radio-b-{{ candidate.id }}">
+                2. Stimme
+              </label>
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+    <button id="send_vote" type="button" class="btn btn-primary mt-3" disabled><i class="fa-solid fa-check-to-slot"></i> Abstimmen</button>
+    <button id="reset_vote" type="button" class="btn btn-secondary mt-3" disabled><i class="fa-solid fa-arrow-rotate-left"></i> Zurücksetzen</button>
+    <div id="msg_vote" class="pt-3"></div>
+{% endblock content %}

@@ -1,0 +1,60 @@
+version: "3.8"
+
+services:
+  app:
+    image: ghcr.io/ethrgeist/generic_vote:${IMAGE_VERSION}
+    env_file: .env
+    environment:
+      STARTMODE: app
+    restart: unless-stopped
+    volumes:
+      - sqlite_data:/app/_db:rw
+      - app_socket:/run/podcast_aggregator
+      - static_files:/static_files
+      - media_files:/app/uploads
+    networks:
+      - generic_vote
+
+  qcluster:
+    image: ghcr.io/ethrgeist/generic_vote:${IMAGE_VERSION}
+    env_file: .env
+    environment:
+      STARTMODE: qcluster
+    volumes:
+      - sqlite_data:/app/_db:rw
+    restart: unless-stopped
+    networks:
+      - generic_vote
+
+  proxy:
+    image: nginx:alpine
+    restart: unless-stopped
+    networks:
+      - generic_vote
+    volumes:
+      - app_socket:/run/podcast_aggregator:ro
+      - static_files:/usr/share/nginx/html/static_files:ro
+      - media_files:/usr/share/nginx/html/media_files:ro
+      - ./contrib/nginx.conf:/etc/nginx/nginx.conf:ro
+
+  redis:
+    image: redis:7
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data:rw
+    networks:
+      - generic_vote
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli ping | grep PONG"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+
+volumes:
+  redis_data:
+  sqlite_data:
+  app_socket:
+  static_files:
+
+networks:
+  generic_vote:

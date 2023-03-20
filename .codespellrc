@@ -1,0 +1,2 @@
+[codespell]
+skip = *.js,*.css,*.map,.git,./src/dist,*.svg,README.md,src/app/templates/**,src/library/eff_large_wordlist.txt

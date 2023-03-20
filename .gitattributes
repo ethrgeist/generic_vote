@@ -1,0 +1,5 @@
+src/static/fonts/** linguist-vendored
+src/static/js/jquery* linguist-vendored
+src/static/js/bootstrap* linguist-vendored
+src/static/fontawesome/** linguist-vendored
+src/static/css/bootstrap* linguist-vendored
