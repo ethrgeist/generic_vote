@@ -55,6 +55,7 @@ volumes:
   sqlite_data:
   app_socket:
   static_files:
+  media_files:
 
 networks:
   generic_vote:
