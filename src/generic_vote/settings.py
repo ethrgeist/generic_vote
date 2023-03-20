@@ -190,6 +190,7 @@ MEDIA_ROOT = getenv("DJANGO_MEDIA_ROOT", "uploads/")
 MEDIA_URL = getenv("DJANGO_MEDIA_URL", "uploads/")
 
 DOMAIN = getenv("DJANGO_DOMAIN", "http://localhost:8000/")
+APP_ROOT = getenv("DJANGO_APP_ROOT", "")
 
 LOGIN_URL = "app_root"
 LOGIN_REDIRECT_URL = "app_root"
