@@ -23,7 +23,7 @@ pandas = "*"
 
 [dev-packages]
 django-debug-toolbar = "==3.8.1"
-pre-commit = "==3.1.1"
+pre-commit = "==3.2.1"
 black = "==23.1.0"
 
 [requires]
